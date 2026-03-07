@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gift Shop</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #0d0d12;
+  --card: #15151e;
+  --card2: #1c1c28;
+  --accent: #c084fc;
+  --accent2: #f472b6;
+  --gold: #fbbf24;
+  --text: #f1f0ff;
+  --muted: #6b6b8a;
+  --border: rgba(192,132,252,0.15);
+  --glow: rgba(192,132,252,0.3);
+  --green: #4ade80;
+  --red: #f87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Manrope', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.header {
+  position: sticky; top: 0; z-index: 100;
+  padding: 16px 20px 10px;
+  background: linear-gradient(180deg, var(--bg) 70%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.header-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.block {
+  margin: 8px 16px 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.block-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 8px;
+}
+
+.input-row { display: flex; gap: 8px; align-items: center; }
+
+.field {
+  flex: 1;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px; font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.field::placeholder { color: var(--muted); font-weight: 400; }
+.field:focus { border-color: var(--accent); }
+.field.valid { border-color: var(--green); }
+.field.invalid { border-color: var(--red); }
+
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* PROMO */
+.promo-apply-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 10px;
+  color: #fff; font-family: 'Manrope', sans-serif;
+  font-size: 12px; font-weight: 700;
+  padding: 10px 14px; cursor: pointer;
+  white-space: nowrap; transition: all 0.2s;
+  flex-shrink: 0;
+}
+.promo-apply-btn:active { transform: scale(0.95); }
+.promo-apply-btn:disabled { background: var(--card2); color: var(--muted); }
+
+.promo-result {
+  margin-top: 8px; font-size: 12px; font-weight: 600;
+  display: none;
+}
+.promo-result.ok { color: var(--green); }
+.promo-result.err { color: var(--red); }
+
+/* FILTERS */
+.filters {
+  display: flex; gap: 8px;
+  padding: 12px 16px 4px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.filter-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.filter-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent; color: #fff;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 8px 16px 130px;
+}
+
+.card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 16px 12px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.card.selected {
+  border-color: var(--accent);
+  background: var(--card2);
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 32px var(--glow);
+}
+
+.card:active { transform: scale(0.93); }
+
+.card-check {
+  position: absolute; top: 8px; right: 8px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  opacity: 0; transform: scale(0);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card.selected .card-check { opacity: 1; transform: scale(1); }
+
+.card-emoji {
+  font-size: 44px; margin-bottom: 8px;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  line-height: 1; transition: transform 0.2s;
+}
+.card:active .card-emoji { transform: scale(1.2) rotate(-8deg); }
+
+.card-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 10px; font-weight: 700;
+  text-align: center; color: var(--text);
+  margin-bottom: 8px; line-height: 1.4;
+}
+
+.card-price {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: 13px; font-weight: 800; color: var(--gold);
+}
+
+.card-price.discounted .original {
+  text-decoration: line-through;
+  font-size: 10px; opacity: 0.6; margin-right: 2px;
+}
+
+/* BOTTOM */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, var(--bg) 80%, transparent);
+  z-index: 200;
+}
+
+.buy-btn {
+  width: 100%; padding: 15px;
+  border-radius: 16px; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 8px 32px var(--glow);
+}
+.buy-btn:active { transform: scale(0.97); }
+.buy-btn:disabled { background: var(--card2); color: var(--muted); box-shadow: none; cursor: default; }
+
+.price-badge {
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px; padding: 3px 8px; font-size: 11px;
+}
+.price-badge.discount {
+  background: rgba(74,222,128,0.25); color: var(--green);
+}
+
+.loader {
+  display: none; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.buy-btn.loading .loader { display: block; }
+.buy-btn.loading .btn-text { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 18px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  z-index: 999;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: rgba(74,222,128,0.4); color: var(--green); }
+.toast.error   { border-color: rgba(248,113,113,0.4); color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">🎁 Gift Shop</div>
+  <div class="header-sub">Выбери подарок и получателя</div>
+</div>
+
+<div class="block">
+  <div class="block-label">Получатель</div>
+  <input class="field" id="recipientInput" type="text"
+    placeholder="@username или числовой ID"
+    autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="field-hint">Введи @username (мин. 5 символов) или Telegram ID</div>
+</div>
+
+<div class="block" style="margin-top:8px">
+  <div class="block-label">Промокод (необязательно)</div>
+  <div class="input-row">
+    <input class="field" id="promoInput" type="text"
+      placeholder="PROMO2024"
+      autocomplete="off" autocorrect="off" spellcheck="false"
+      style="text-transform:uppercase">
+    <button class="promo-apply-btn" id="promoBtn">Применить</button>
+  </div>
+  <div class="promo-result" id="promoResult"></div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-price="all">Все</button>
+  <button class="filter-btn" data-price="15">15 ⭐</button>
+  <button class="filter-btn" data-price="25">25 ⭐</button>
+  <button class="filter-btn" data-price="50">50 ⭐</button>
+  <button class="filter-btn" data-price="100">100 ⭐</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bottom-bar">
+  <button class="buy-btn" id="buyBtn" disabled>
+    <div class="loader"></div>
+    <span class="btn-text" id="btnText">Выбери подарок</span>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = 'https://47d85cf57ff610.lhr.life';
+
+const GIFTS = [
+  { name: 'Сердце',            emoji: '❤️',  price: 15  },
+  { name: 'Мишка',             emoji: '🧸',  price: 15  },
+  { name: 'Коробка',           emoji: '🎁',  price: 25  },
+  { name: 'Роза',              emoji: '🌹',  price: 25  },
+  { name: 'Медведь в шапке',   emoji: '🧸',  price: 50  },
+  { name: 'Ёлка',              emoji: '🎄',  price: 50  },
+  { name: 'Медведь с сердцем', emoji: '🐻',  price: 50  },
+  { name: 'Сердце с бантом',   emoji: '💖',  price: 50  },
+  { name: 'Торт',              emoji: '🎂',  price: 50  },
+  { name: 'Букет',             emoji: '💐',  price: 50  },
+  { name: 'Ракета',            emoji: '🚀',  price: 50  },
+  { name: 'Шампанское',        emoji: '🍾',  price: 50  },
+  { name: 'Золотая звезда',    emoji: '⭐',  price: 100 },
+  { name: 'Кольцо',            emoji: '💍',  price: 100 },
+  { name: 'Серебряная звезда', emoji: '🌟',  price: 100 },
+];
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const senderId = tg?.initDataUnsafe?.user?.id || null;
+
+let selected     = null;
+let activeFilter = 'all';
+let isLoading    = false;
+let promoApplied = null; // { code, finalPrice, discountText }
+
+const grid       = document.getElementById('grid');
+const buyBtn     = document.getElementById('buyBtn');
+const btnText    = document.getElementById('btnText');
+const recipInput = document.getElementById('recipientInput');
+const promoInput = document.getElementById('promoInput');
+const promoBtn   = document.getElementById('promoBtn');
+const promoRes   = document.getElementById('promoResult');
+
+// ===== RENDER =====
+function renderGrid() {
+  const filtered = activeFilter === 'all'
+    ? GIFTS : GIFTS.filter(g => g.price === parseInt(activeFilter));
+  grid.innerHTML = '';
+  filtered.forEach(gift => {
+    const card = document.createElement('div');
+    card.className = 'card' + (selected?.name === gift.name ? ' selected' : '');
+
+    let priceHtml = '';
+    if (promoApplied && selected?.name === gift.name) {
+      const fp = promoApplied.finalPrice;
+      priceHtml = `<div class="card-price discounted">
+        <span class="original">${gift.price}</span>⭐ ${fp}
+      </div>`;
+    } else {
+      priceHtml = `<div class="card-price">⭐ ${gift.price}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-check">✓</div>
+      <div class="card-emoji">${gift.emoji}</div>
+      <div class="card-name">${gift.name}</div>
+      ${priceHtml}
+    `;
+    card.addEventListener('click', () => {
+      selected = selected?.name === gift.name ? null : gift;
+      // Сбрасываем промо если меняем подарок
+      if (promoApplied) {
+        promoApplied = null;
+        promoRes.style.display = 'none';
+        promoInput.value = '';
+        promoInput.className = 'field';
+      }
+      if (selected && tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      renderGrid(); updateBtn();
+    });
+    grid.appendChild(card);
+  });
+}
+
+// ===== VALIDATE =====
+function validateRecipient(val) {
+  if (/^@[a-zA-Z0-9_]{5,32}$/.test(val)) return true;
+  if (/^\d{5,}$/.test(val)) return true;
+  return false;
+}
+
+recipInput.addEventListener('input', () => {
+  const val = recipInput.value.trim();
+  recipInput.classList.remove('valid', 'invalid');
+  if (val) recipInput.classList.add(validateRecipient(val) ? 'valid' : 'invalid');
+  updateBtn();
+});
+
+// ===== PROMO =====
+promoInput.addEventListener('input', () => {
+  promoInput.value = promoInput.value.toUpperCase();
+  if (promoApplied) {
+    promoApplied = null;
+    promoRes.style.display = 'none';
+    promoInput.className = 'field';
+    renderGrid(); updateBtn();
+  }
+});
+
+promoBtn.addEventListener('click', async () => {
+  const code = promoInput.value.trim();
+  if (!code) return;
+  if (!selected) {
+    showToast('⚠️ Сначала выбери подарок', 'error');
+    return;
+  }
+
+  promoBtn.disabled = true;
+  promoBtn.textContent = '...';
+
+  try {
+    const resp = await fetch(`${API_URL}/check_promo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, gift: selected.name })
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      promoApplied = {
+        code,
+        finalPrice: data.final_price,
+        discountText: data.discount_text,
+      };
+      promoRes.textContent = `✅ Промокод применён: ${data.discount_text} (${data.original_price} → ${data.final_price}⭐)`;
+      promoRes.className = 'promo-result ok';
+      promoRes.style.display = 'block';
+      promoInput.className = 'field valid';
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    } else {
+      promoApplied = null;
+      promoRes.textContent = `❌ ${data.error}`;
+      promoRes.className = 'promo-result err';
+      promoRes.style.display = 'block';
+      promoInput.className = 'field invalid';
+    }
+    renderGrid(); updateBtn();
+  } catch (e) {
+    showToast('❌ Ошибка проверки промокода', 'error');
+  } finally {
+    promoBtn.disabled = false;
+    promoBtn.textContent = 'Применить';
+  }
+});
+
+// ===== UPDATE BTN =====
+function updateBtn() {
+  if (isLoading) return;
+  const recipient = recipInput.value.trim();
+  const ok = selected && validateRecipient(recipient);
+  buyBtn.disabled = !ok;
+
+  if (!selected) {
+    btnText.textContent = 'Выбери подарок';
+  } else if (!validateRecipient(recipient)) {
+    btnText.textContent = 'Введи получателя';
+  } else if (promoApplied) {
+    btnText.innerHTML = `Оплатить ${selected.emoji} <span class="price-badge discount">⭐ ${promoApplied.finalPrice}</span>`;
+  } else {
+    btnText.innerHTML = `Оплатить ${selected.emoji} <span class="price-badge">⭐ ${selected.price}</span>`;
+  }
+}
+
+// ===== TOAST =====
+function showToast(text, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ===== BUY =====
+buyBtn.addEventListener('click', async () => {
+  if (!selected || isLoading) return;
+  const recipient = recipInput.value.trim();
+
+  if (!validateRecipient(recipient)) {
+    showToast('⚠️ Неверный формат получателя', 'error');
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    return;
+  }
+
+  if (!senderId) {
+    showToast('⚠️ Открой через Telegram', 'error');
+    return;
+  }
+
+  isLoading = true;
+  buyBtn.classList.add('loading');
+  buyBtn.disabled = true;
+
+  try {
+    const body = {
+      gift: selected.name,
+      recipient,
+      sender_id: senderId,
+    };
+    if (promoApplied) body.promo_code = promoApplied.code;
+
+    const resp = await fetch(`${API_URL}/create_invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка сервера');
+
+    tg.openInvoice(data.invoice_link, (status) => {
+      if (status === 'paid') {
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        showToast('🎉 Оплачено! Подарок отправлен', 'success');
+        selected = null;
+        promoApplied = null;
+        recipInput.value = '';
+        recipInput.className = 'field';
+        promoInput.value = '';
+        promoInput.className = 'field';
+        promoRes.style.display = 'none';
+        renderGrid();
+      } else if (status === 'cancelled') {
+        showToast('Оплата отменена', '');
+      } else if (status === 'failed') {
+        showToast('❌ Ошибка оплаты', 'error');
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      }
+    });
+
+  } catch (err) {
+    showToast(`❌ ${err.message}`, 'error');
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+  } finally {
+    isLoading = false;
+    buyBtn.classList.remove('loading');
+    updateBtn();
+  }
+});
+
+// ===== FILTERS =====
+document.getElementById('filters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.price;
+  renderGrid();
+});
+
+renderGrid();
+updateBtn();
+</script>
+</body>
+</html>
