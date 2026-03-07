@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gift Shop</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0f0f17;
+  --card:    #1a1a26;
+  --card2:   #22223a;
+  --border:  rgba(255,255,255,0.08);
+  --text:    #f0f0ff;
+  --muted:   rgba(240,240,255,0.45);
+  --accent:  #a259ff;
+  --accent2: #ff6bd6;
+  --green:   #4ade80;
+  --red:     #f87171;
+  --glow:    rgba(162,89,255,0.35);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--text); font-family: 'Manrope', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+.header { padding: 16px 16px 8px; display: flex; align-items: center; gap: 10px; }
+.header-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header-sub { font-size: 12px; color: var(--muted); padding: 0 16px 12px; }
+
+.block { margin: 0 12px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 10px; }
+.block-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px; }
+.field { width: 100%; background: var(--card2); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 500; padding: 12px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(162,89,255,0.15); }
+.field.valid { border-color: var(--green); }
+.field.invalid { border-color: var(--red); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 6px; padding: 0 2px; }
+
+.promo-row { display: flex; gap: 8px; align-items: center; }
+.promo-row .field { flex: 1; min-width: 0; }
+.promo-btn { flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 12px; color: #fff; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; padding: 12px 16px; cursor: pointer; transition: opacity 0.2s, transform 0.15s; white-space: nowrap; }
+.promo-btn:active { transform: scale(0.95); }
+.promo-result { margin-top: 8px; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; display: none; }
+.promo-result.ok  { background: rgba(74,222,128,0.12); color: var(--green); }
+.promo-result.err { background: rgba(248,113,113,0.12); color: var(--red); }
+
+/* FILTERS */
+.filters { display: flex; gap: 8px; padding: 4px 12px 6px; overflow-x: auto; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filter-btn { flex-shrink: 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: all 0.2s; }
+.filter-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; }
+.filter-price-btn { flex-shrink: 0; background: var(--card); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer; transition: all 0.2s; }
+.filter-price-btn.active { background: var(--card2); border-color: var(--accent); color: var(--accent); }
+
+/* GRID */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px 10px; }
+.card { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 12px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; position: relative; transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s; user-select: none; }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(162,89,255,0.3), 0 4px 20px var(--glow); background: var(--card2); }
+.card:active { transform: scale(0.95); }
+.card-check { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-size: 10px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+.card.selected .card-check { display: flex; }
+.card-count { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-size: 10px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+.card.selected .card-count { display: flex; }
+.card-badge { position: absolute; top: 6px; left: 6px; background: linear-gradient(135deg, #ff6b35, #ff3d3d); border-radius: 6px; padding: 2px 5px; font-size: 8px; font-weight: 800; color: #fff; }
+.card-emoji { font-size: 38px; line-height: 1; transition: transform 0.2s; }
+.card.selected .card-emoji { transform: scale(1.1); }
+.card-name { font-size: 10px; font-weight: 700; text-align: center; color: var(--text); line-height: 1.2; }
+.card-price { font-size: 11px; font-weight: 700; color: var(--muted); }
+.card-price.discounted .original { text-decoration: line-through; opacity: 0.5; margin-right: 2px; }
+.card-price.discounted .final { color: var(--green); }
+.card-preview-btn { margin-top: 4px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 700; padding: 3px 8px; cursor: pointer; transition: all 0.18s; width: 100%; }
+.card-preview-btn:active { background: var(--card2); color: var(--accent); }
+
+/* SELECTED GIFTS BAR */
+.selected-bar { margin: 0 12px 10px; background: var(--card); border: 1px solid var(--accent); border-radius: 16px; padding: 12px 14px; display: none; }
+.selected-bar.show { display: block; }
+.selected-bar-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.selected-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.selected-item:last-child { border-bottom: none; padding-bottom: 0; }
+.selected-item-emoji { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.selected-item-info { flex: 1; min-width: 0; }
+.selected-item-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.selected-item-price { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.selected-item-comment { width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Manrope', sans-serif; font-size: 12px; padding: 8px 10px; outline: none; resize: none; transition: border-color 0.2s; }
+.selected-item-comment:focus { border-color: var(--accent); }
+.selected-item-remove { flex-shrink: 0; background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; color: var(--red); font-size: 12px; padding: 4px 8px; cursor: pointer; margin-top: 2px; }
+.selected-total { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.selected-total-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.selected-total-price { font-size: 15px; font-weight: 800; color: var(--text); }
+.selected-total-price.discounted { color: var(--green); }
+
+/* BUY BUTTON */
+.buy-btn { margin: 4px 12px 16px; width: calc(100% - 24px); padding: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 24px var(--glow); display: flex; align-items: center; justify-content: center; gap: 8px; }
+.buy-btn:disabled { background: var(--card2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+.buy-btn:not(:disabled):active { transform: scale(0.98); }
+
+.loader { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--card2); border: 1px solid var(--border); border-radius: 14px; padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--text); opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 999; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--green); color: var(--green); }
+.toast.error   { border-color: var(--red);   color: var(--red); }
+
+/* CONFIRM MODAL */
+.modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+.modal { width: 100%; background: var(--card); border-radius: 24px 24px 0 0; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1); max-height: 85vh; overflow-y: auto; }
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.confirm-gift-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.confirm-gift-row:last-of-type { border-bottom: none; }
+.confirm-emoji { font-size: 32px; }
+.confirm-info { flex: 1; }
+.confirm-name { font-size: 13px; font-weight: 700; }
+.confirm-comment { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.confirm-price { font-size: 13px; font-weight: 700; color: var(--muted); }
+.confirm-total { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; padding: 12px; background: var(--card2); border-radius: 12px; }
+.confirm-total-label { font-size: 13px; color: var(--muted); }
+.confirm-total-val { font-size: 16px; font-weight: 800; }
+.confirm-recipient { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.confirm-recipient span { color: var(--text); font-weight: 700; }
+.modal-btns { display: flex; gap: 10px; margin-top: 4px; }
+.modal-btn { flex: 1; padding: 14px; border-radius: 14px; border: none; font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.modal-btn.cancel { background: var(--card2); color: var(--muted); border: 1px solid var(--border); }
+.modal-btn.confirm { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; box-shadow: 0 4px 20px var(--glow); }
+.modal-btn:active { transform: scale(0.96); }
+
+/* GIFT CHAT PREVIEW */
+.gift-preview-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,0.82); backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.22s; padding: 20px; }
+.gift-preview-overlay.show { opacity: 1; pointer-events: all; }
+.gift-preview-box { width: 100%; max-width: 280px; transform: scale(0.88) translateY(24px); transition: transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1); }
+.gift-preview-overlay.show .gift-preview-box { transform: scale(1) translateY(0); }
+.tg-gift-wrap { background: #1e1f28; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+.tg-gift-image-area { background: #1a1b25; height: 220px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.tg-gift-image-area::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 15% 25%, rgba(255,255,255,0.5) 0%, transparent 100%), radial-gradient(1px 1px at 75% 18%, rgba(255,255,255,0.35) 0%, transparent 100%), radial-gradient(2px 2px at 45% 70%, rgba(255,210,80,0.4) 0%, transparent 100%), radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,0.3) 0%, transparent 100%), radial-gradient(1.5px 1.5px at 20% 80%, rgba(255,255,255,0.25) 0%, transparent 100%), radial-gradient(1px 1px at 60% 35%, rgba(255,210,80,0.35) 0%, transparent 100%); pointer-events: none; }
+.tg-gift-sticker { font-size: 130px; line-height: 1; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5)); position: relative; z-index: 1; animation: giftFloat 3s ease-in-out infinite; }
+@keyframes giftFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.tg-gift-bottom { background: #252636; padding: 14px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 4px; border-top: 1px solid rgba(255,255,255,0.06); }
+.tg-gift-title { font-size: 15px; font-weight: 600; color: #fff; text-align: center; }
+.tg-gift-subtitle { font-size: 13px; color: rgba(255,255,255,0.45); text-align: center; line-height: 1.4; display: none; }
+.tg-gift-action { margin-top: 6px; color: #4d9ef5; font-size: 15px; cursor: default; }
+.tg-gift-from { margin-top: 10px; background: rgba(255,255,255,0.07); border-radius: 20px; padding: 5px 16px; font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; }
+.gift-preview-hint { text-align: center; margin-top: 10px; color: rgba(255,255,255,0.25); font-size: 11px; }
+.gift-preview-close { text-align: center; margin-top: 10px; color: rgba(255,255,255,0.45); font-size: 14px; font-weight: 500; cursor: pointer; padding: 8px; }
+</style>
+</head>
+<body>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🎁 Подтверждение</div>
+    <div class="confirm-recipient">Получатель: <span id="confirmRecipient"></span></div>
+    <div id="confirmGiftsList"></div>
+    <div class="confirm-total">
+      <div class="confirm-total-label">Итого</div>
+      <div class="confirm-total-val" id="confirmTotal"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" id="modalCancel">Назад</button>
+      <button class="modal-btn confirm" id="modalConfirm">
+        <div class="loader" id="modalLoader"></div>
+        <span id="modalBtnText">Оплатить</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="gift-preview-overlay" id="giftPreviewOverlay">
+  <div class="gift-preview-box">
+    <div class="tg-gift-wrap">
+      <div class="tg-gift-image-area">
+        <div class="tg-gift-sticker" id="gpEmoji"></div>
+      </div>
+      <div class="tg-gift-bottom">
+        <div class="tg-gift-title" id="gpTitle">Сохранённый подарок</div>
+        <div class="tg-gift-subtitle" id="gpComment"></div>
+        <div class="tg-gift-action">Посмотреть</div>
+      </div>
+    </div>
+    <div class="tg-gift-from" id="gpFrom">подарок от вас</div>
+    <div class="gift-preview-close" id="giftPreviewClose">✕ Закрыть</div>
+    <div class="gift-preview-hint">Так подарок выглядит у получателя в профиле</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- UI -->
+<div class="header">
+  <div class="header-icon">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="10" cy="7" rx="4" ry="2.5" transform="rotate(-30 10 7)" fill="#c47eff"/>
+      <ellipse cx="18" cy="7" rx="4" ry="2.5" transform="rotate(30 18 7)" fill="#c47eff"/>
+      <circle cx="14" cy="8" r="2.2" fill="#d49fff"/>
+      <rect x="5" y="10" width="18" height="14" rx="3" fill="#a259ff"/>
+      <rect x="4" y="8" width="20" height="4" rx="2" fill="#b36eff"/>
+      <rect x="12.5" y="8" width="3" height="16" rx="1.5" fill="#c47eff"/>
+    </svg>
+  </div>
+  <div class="header-title">Gift Shop</div>
+</div>
+<div class="header-sub">Выбери подарки и получателя</div>
+
+<div class="block">
+  <div class="block-label">Получатель</div>
+  <input class="field" id="recipInput" type="text" placeholder="@username или числовой ID" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="field-hint">Введи @username (мин. 5 символов) или Telegram ID</div>
+</div>
+
+<div class="block">
+  <div class="block-label">Промокод (необязательно)</div>
+  <div class="promo-row">
+    <input class="field" id="promoInput" type="text" placeholder="PROMO2024" autocomplete="off" style="text-transform:uppercase">
+    <button class="promo-btn" id="promoBtn">Применить</button>
+  </div>
+  <div class="promo-result" id="promoResult"></div>
+</div>
+
+<!-- Selected gifts bar -->
+<div class="selected-bar" id="selectedBar">
+  <div class="selected-bar-title">🛒 Выбранные подарки</div>
+  <div id="selectedList"></div>
+  <div class="selected-total">
+    <div class="selected-total-label">Итого:</div>
+    <div class="selected-total-price" id="totalPrice">0 ⭐</div>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-filter="all">Все</button>
+  <button class="filter-btn" data-filter="limited">🔥 Удалённые</button>
+  <button class="filter-btn" data-filter="regular">Обычные</button>
+</div>
+<div class="filters" id="filtersPrice">
+  <button class="filter-price-btn active" data-price="all">Все цены</button>
+  <button class="filter-price-btn" data-price="15">⭐ 15</button>
+  <button class="filter-price-btn" data-price="25">⭐ 25</button>
+  <button class="filter-price-btn" data-price="50">⭐ 50</button>
+  <button class="filter-price-btn" data-price="100">⭐ 100</button>
+</div>
+
+<div class="grid" id="grid"><div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:30px;font-size:13px">⏳ Загрузка подарков...</div></div>
+
+<button class="buy-btn" id="buyBtn" disabled>
+  <span id="buyBtnText">Выбери подарок</span>
+</button>
+
+<script>
+const API_URL  = 'https://7e78ea1902698f.lhr.life';
+const tg       = window.Telegram?.WebApp;
+const senderId = tg?.initDataUnsafe?.user?.id || null;
+if (tg) { tg.expand(); tg.setHeaderColor('#0f0f17'); }
+
+let GIFTS = [];
+let LIMITED = new Set();
+
+async function loadGifts() {
+  try {
+    const r = await fetch(`${API_URL}/gifts`);
+    const d = await r.json();
+    if (d.ok) {
+      GIFTS = d.gifts;
+      LIMITED = new Set(d.gifts.filter(g => g.limited).map(g => g.name));
+    }
+  } catch(e) {
+    // fallback — пустой список, покажем ошибку
+    console.error('Не удалось загрузить подарки:', e);
+  }
+  renderGrid();
+  updateBtn();
+}
+
+// selected = Map<giftName, {gift, comment}>
+let selected = new Map();
+let promoApplied = null;
+let isLoading = false;
+let activeFilter = 'all';
+let activePrice = 'all';
+
+const grid         = document.getElementById('grid');
+const buyBtn       = document.getElementById('buyBtn');
+const buyBtnText   = document.getElementById('buyBtnText');
+const recipInput   = document.getElementById('recipInput');
+const promoInput   = document.getElementById('promoInput');
+const promoBtn     = document.getElementById('promoBtn');
+const promoRes     = document.getElementById('promoResult');
+const toast        = document.getElementById('toast');
+const selectedBar  = document.getElementById('selectedBar');
+const selectedList = document.getElementById('selectedList');
+const totalPriceEl = document.getElementById('totalPrice');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalCancel  = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+const modalLoader  = document.getElementById('modalLoader');
+const modalBtnText = document.getElementById('modalBtnText');
+const giftPreviewOverlay = document.getElementById('giftPreviewOverlay');
+const giftPreviewClose   = document.getElementById('giftPreviewClose');
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+function validateRecipient(v) {
+  return /^@[a-zA-Z0-9_]{5,32}$/.test(v) || /^\d{5,}$/.test(v);
+}
+function getTotalPrice() {
+  let total = 0;
+  selected.forEach(({gift}) => total += gift.price);
+  return total;
+}
+function getFinalPrice() {
+  const total = getTotalPrice();
+  if (!promoApplied) return total;
+  return promoApplied.finalPrice;
+}
+
+function updateBtn() {
+  const r = recipInput.value.trim();
+  const ok = selected.size > 0 && validateRecipient(r);
+  buyBtn.disabled = !ok || isLoading;
+  if (selected.size === 0) {
+    buyBtnText.textContent = 'Выбери подарок';
+  } else if (!validateRecipient(r)) {
+    buyBtnText.textContent = 'Укажи получателя';
+  } else {
+    const fp = getFinalPrice();
+    const count = selected.size;
+    buyBtnText.textContent = `Оплатить ${count > 1 ? count + ' подарка' : ''} ⭐${fp}`.trim();
+  }
+}
+
+function updateSelectedBar() {
+  if (selected.size === 0) {
+    selectedBar.classList.remove('show');
+    return;
+  }
+  selectedBar.classList.add('show');
+  selectedList.innerHTML = '';
+  selected.forEach(({gift, comment}, name) => {
+    const div = document.createElement('div');
+    div.className = 'selected-item';
+    div.innerHTML = `
+      <div class="selected-item-emoji">${gift.emoji}</div>
+      <div class="selected-item-info">
+        <div class="selected-item-name">${gift.name}</div>
+        <div class="selected-item-price">⭐ ${gift.price}</div>
+        <textarea class="selected-item-comment" placeholder="Комментарий к подарку..." rows="2" maxlength="200" data-name="${gift.name}">${comment || ''}</textarea>
+      </div>
+      <button class="selected-item-remove" data-remove="${gift.name}">✕</button>
+    `;
+    selectedList.appendChild(div);
+  });
+
+  // Bind comment inputs
+  selectedList.querySelectorAll('.selected-item-comment').forEach(ta => {
+    ta.addEventListener('input', () => {
+      const entry = selected.get(ta.dataset.name);
+      if (entry) entry.comment = ta.value;
+    });
+  });
+
+  // Bind remove buttons
+  selectedList.querySelectorAll('.selected-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selected.delete(btn.dataset.remove);
+      if (promoApplied) { promoApplied = null; promoRes.style.display = 'none'; promoInput.value = ''; promoInput.className = 'field'; }
+      updateSelectedBar();
+      updateTotalPrice();
+      renderGrid();
+      updateBtn();
+    });
+  });
+
+  updateTotalPrice();
+}
+
+function updateTotalPrice() {
+  const total = getTotalPrice();
+  const final = getFinalPrice();
+  if (promoApplied && final < total) {
+    totalPriceEl.className = 'selected-total-price discounted';
+    totalPriceEl.innerHTML = `<s style="opacity:0.5;font-size:12px">${total}</s> ${final} ⭐`;
+  } else {
+    totalPriceEl.className = 'selected-total-price';
+    totalPriceEl.textContent = final + ' ⭐';
+  }
+}
+
+function renderGrid() {
+  grid.innerHTML = '';
+  let list = activeFilter === 'all' ? GIFTS
+    : activeFilter === 'limited' ? GIFTS.filter(g => LIMITED.has(g.name))
+    : GIFTS.filter(g => !LIMITED.has(g.name));
+  if (activePrice !== 'all') list = list.filter(g => g.price === parseInt(activePrice));
+
+  list.forEach(gift => {
+    const isSelected = selected.has(gift.name);
+    const card = document.createElement('div');
+    card.className = 'card' + (isSelected ? ' selected' : '');
+
+    const badge = LIMITED.has(gift.name) ? '<div class="card-badge">🔥</div>' : '';
+    card.innerHTML = `
+      ${badge}
+      <div class="card-count">${isSelected ? '✓' : ''}</div>
+      <div class="card-emoji">${gift.emoji}</div>
+      <div class="card-name">${gift.name}</div>
+      <div class="card-price">⭐ ${gift.price}</div>
+      <button class="card-preview-btn">👁 Предпросмотр</button>
+    `;
+
+    card.querySelector('.card-preview-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      showGiftPreview(gift);
+    });
+
+    card.addEventListener('click', () => {
+      if (selected.has(gift.name)) {
+        selected.delete(gift.name);
+        if (promoApplied) { promoApplied = null; promoRes.style.display = 'none'; promoInput.value = ''; promoInput.className = 'field'; }
+      } else {
+        selected.set(gift.name, {gift, comment: ''});
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      }
+      updateSelectedBar();
+      renderGrid();
+      updateBtn();
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+// FILTERS
+document.getElementById('filters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn'); if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); activeFilter = btn.dataset.filter; renderGrid();
+});
+document.getElementById('filtersPrice').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-price-btn'); if (!btn) return;
+  document.querySelectorAll('.filter-price-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); activePrice = btn.dataset.price; renderGrid();
+});
+
+// RECIPIENT
+recipInput.addEventListener('input', () => {
+  const v = recipInput.value.trim();
+  recipInput.className = 'field' + (v.length > 2 ? (validateRecipient(v) ? ' valid' : ' invalid') : '');
+  updateBtn();
+});
+
+// PROMO
+promoInput.addEventListener('input', () => { promoInput.value = promoInput.value.toUpperCase(); });
+promoBtn.addEventListener('click', async () => {
+  const code = promoInput.value.trim().toUpperCase();
+  if (!code) return;
+  if (selected.size === 0) { showToast('⚠️ Сначала выбери подарок', 'error'); return; }
+  promoBtn.disabled = true; promoBtn.textContent = '...';
+  try {
+    const total = getTotalPrice();
+    // Use first gift for promo check, apply to total
+    const firstGift = selected.values().next().value.gift;
+    const r = await fetch(`${API_URL}/check_promo`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code, gift: firstGift.name})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      // Recalculate discount on total
+      let finalTotal;
+      if (d.discount_type === 'percent' || d.discount_text.includes('%')) {
+        const pct = parseInt(d.discount_text);
+        finalTotal = Math.max(1, Math.round(total * (1 - pct/100)));
+      } else {
+        const discount = d.original_price - d.final_price;
+        finalTotal = Math.max(1, total - discount);
+      }
+      promoApplied = {code, finalPrice: finalTotal, discountText: d.discount_text};
+      promoRes.className = 'promo-result ok';
+      promoRes.textContent = `✅ ${d.discount_text} → ${finalTotal} ⭐`;
+      promoRes.style.display = 'block';
+      promoInput.className = 'field valid';
+      updateSelectedBar(); updateBtn();
+    } else {
+      promoApplied = null;
+      promoRes.className = 'promo-result err';
+      promoRes.textContent = `❌ ${d.error}`;
+      promoRes.style.display = 'block';
+      promoInput.className = 'field invalid';
+      updateBtn();
+    }
+  } catch { showToast('❌ Ошибка соединения', 'error'); }
+  finally { promoBtn.disabled = false; promoBtn.textContent = 'Применить'; }
+});
+
+// GIFT PREVIEW
+function showGiftPreview(gift) {
+  document.getElementById('gpEmoji').textContent = gift.emoji;
+  document.getElementById('gpTitle').textContent = gift.name;
+  const entry = selected.get(gift.name);
+  const comment = entry?.comment?.trim() || '';
+  const gc = document.getElementById('gpComment');
+  if (comment) { gc.textContent = comment; gc.style.display = 'block'; }
+  else { gc.style.display = 'none'; }
+  const r = recipInput.value.trim();
+  document.getElementById('gpFrom').textContent = r ? `подарок для ${r}` : 'подарок от вас';
+  giftPreviewOverlay.classList.add('show');
+  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+giftPreviewClose.addEventListener('click', () => giftPreviewOverlay.classList.remove('show'));
+giftPreviewOverlay.addEventListener('click', e => { if (e.target === giftPreviewOverlay) giftPreviewOverlay.classList.remove('show'); });
+
+// CONFIRM MODAL
+function showConfirm() {
+  const r = recipInput.value.trim();
+  document.getElementById('confirmRecipient').textContent = r;
+  const listEl = document.getElementById('confirmGiftsList');
+  listEl.innerHTML = '';
+  selected.forEach(({gift, comment}) => {
+    const row = document.createElement('div');
+    row.className = 'confirm-gift-row';
+    row.innerHTML = `
+      <div class="confirm-emoji">${gift.emoji}</div>
+      <div class="confirm-info">
+        <div class="confirm-name">${gift.name}</div>
+        ${comment ? `<div class="confirm-comment">💬 ${comment}</div>` : ''}
+      </div>
+      <div class="confirm-price">⭐${gift.price}</div>
+    `;
+    listEl.appendChild(row);
+  });
+  const total = getTotalPrice();
+  const final = getFinalPrice();
+  const totalEl = document.getElementById('confirmTotal');
+  if (promoApplied && final < total) {
+    totalEl.innerHTML = `<s style="opacity:0.5;font-size:13px">${total}</s> ${final} ⭐ (${promoApplied.discountText})`;
+  } else {
+    totalEl.textContent = final + ' ⭐';
+  }
+  modalBtnText.textContent = `Оплатить ⭐${final}`;
+  modalOverlay.classList.add('show');
+}
+
+buyBtn.addEventListener('click', () => {
+  if (selected.size === 0 || isLoading) return;
+  const r = recipInput.value.trim();
+  if (!validateRecipient(r)) { showToast('⚠️ Неверный формат получателя', 'error'); return; }
+  if (!senderId) { showToast('⚠️ Открой через Telegram', 'error'); return; }
+  showConfirm();
+});
+modalCancel.addEventListener('click', () => modalOverlay.classList.remove('show'));
+modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('show'); });
+
+// PAY
+modalConfirm.addEventListener('click', async () => {
+  if (isLoading) return;
+  const r = recipInput.value.trim();
+  isLoading = true; modalConfirm.disabled = true;
+  modalLoader.style.display = 'block'; modalBtnText.style.display = 'none';
+  try {
+    const giftsArr = [];
+    selected.forEach(({gift, comment}) => {
+      giftsArr.push({name: gift.name, comment: comment || null});
+    });
+    const body = {
+      gifts: giftsArr,
+      recipient: r,
+      sender_id: senderId,
+    };
+    if (promoApplied) body.promo_code = promoApplied.code;
+
+    const resp = await fetch(`${API_URL}/create_invoice`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Ошибка сервера');
+
+    tg.openInvoice(data.invoice_link, status => {
+      if (status === 'paid') {
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        showToast('🎉 Оплачено! Подарки отправлены', 'success');
+        selected.clear(); promoApplied = null;
+        recipInput.value = ''; recipInput.className = 'field';
+        promoInput.value = ''; promoInput.className = 'field';
+        promoRes.style.display = 'none';
+        modalOverlay.classList.remove('show');
+        updateSelectedBar(); renderGrid(); updateBtn();
+      } else if (status === 'cancelled') {
+        showToast('Оплата отменена', '');
+      } else if (status === 'failed') {
+        showToast('❌ Ошибка оплаты', 'error');
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      }
+    });
+  } catch(err) {
+    showToast(`❌ ${err.message}`, 'error');
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+  } finally {
+    isLoading = false; modalConfirm.disabled = false;
+    modalLoader.style.display = 'none'; modalBtnText.style.display = 'inline';
+    updateBtn();
+  }
+});
+
+loadGifts();
+</script>
+</body>
+</html>
