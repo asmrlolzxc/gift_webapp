@@ -257,7 +257,7 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Manrope', 
 </button>
 
 <script>
-const API_URL  = 'https://a69ab3a8c68094.lhr.life';
+const API_URL  = 'https://98db400d93b50b.lhr.life';
 const tg       = window.Telegram?.WebApp;
 const senderId = tg?.initDataUnsafe?.user?.id || null;
 if (tg) { tg.expand(); tg.setHeaderColor('#0f0f17'); }
@@ -615,6 +615,8 @@ modalConfirm.addEventListener('click', async () => {
     });
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Ошибка сервера');
+
+    if (data.warning) showToast(data.warning, 'error');
 
     tg.openInvoice(data.invoice_link, status => {
       if (status === 'paid') {
