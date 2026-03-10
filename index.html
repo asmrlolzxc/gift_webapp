@@ -73,8 +73,7 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Manrope', 
 .qty-val { font-size: 15px; font-weight: 800; color: var(--text); min-width: 16px; text-align: center; }
 .card-add-btn { margin-top: 4px; width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 8px; color: #fff; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 700; padding: 5px 8px; cursor: pointer; transition: all 0.15s; }
 .card-add-btn:active { opacity: 0.8; transform: scale(0.95); }
-.card-preview-btn { margin-top: 4px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 700; padding: 3px 8px; cursor: pointer; transition: all 0.18s; width: 100%; }
-.card-preview-btn:active { background: var(--card2); color: var(--accent); }
+
 
 /* SELECTED GIFTS BAR */
 .selected-bar { margin: 0 12px 10px; background: var(--card); border: 1px solid var(--accent); border-radius: 16px; padding: 12px 14px; display: none; }
@@ -425,13 +424,7 @@ function renderGrid() {
           <button class="qty-btn qty-plus" data-name="${gift.name}">+</button>
         </div>
       ` : `<button class="card-add-btn" data-name="${gift.name}">+ Добавить</button>`}
-      <button class="card-preview-btn">👁 Предпросмотр</button>
     `;
-
-    card.querySelector('.card-preview-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      showGiftPreview(gift);
-    });
 
     if (isSelected) {
       card.querySelector('.qty-minus').addEventListener('click', e => {
